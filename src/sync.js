@@ -47,8 +47,10 @@ function makeSync(db, config, { fetchImpl } = {}) {
       const r = await retailer.get(`/retailer/retailers/${encodeURIComponent(rid[1])}`, {}, V10).catch(() => null);
       if (r) name = r.displayName || r.retailerName || r.name || null;
     }
-    setMeta(db, 'account_check', JSON.stringify({ at: new Date().toISOString(), retailerId: rid ? rid[1] : null, name, claimKeys: Object.keys(info.claims) }));
-    return { records: 1, message: name ? `Gekoppeld account: ${name}${rid ? ` (id ${rid[1]})` : ''}` : (rid ? `Retailer-id ${rid[1]} — naam niet opgehaald, controleer in het partnerdashboard` : 'Inloggen gelukt; accountnaam niet in token — controleer via orders/producten') };
+    const client = info.claims.clientname || info.claims.client_name || null;
+    setMeta(db, 'account_check', JSON.stringify({ at: new Date().toISOString(), retailerId: rid ? rid[1] : null, name, clientName: client, claimKeys: Object.keys(info.claims) }));
+    if (name) return { records: 1, message: `Gekoppeld account: ${name}${rid ? ` (id ${rid[1]})` : ''}` };
+    return { records: 1, message: `Inloggen gelukt met toegangsgegevens "${client || 'onbekend'}". Accountnaam staat niet in het token: controleer via producten en orders of dit RFIG is.` };
   }
 
   // ---------- Aanbod (Offers v11) ----------

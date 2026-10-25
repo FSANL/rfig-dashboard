@@ -85,7 +85,11 @@ function productView(db, config, ean, nowMs = Date.now()) {
   const p = db.prepare('SELECT * FROM products WHERE ean = ?').get(ean);
   if (!p) return null;
   const du = dailyUnits(db, ean);
-  const hs = historyStart(db);
+  // "Totale historie sinds introductie": vanaf de eerste verkoop van dit product,
+  // maar nooit vóór het begin van de beschikbare orderhistorie.
+  const globalStart = historyStart(db);
+  const firstSale = Object.keys(du).filter((d) => du[d] > 0).sort()[0] || null;
+  const hs = firstSale && (!globalStart || firstSale > globalStart) ? firstSale : globalStart;
   const short = shortageDays(db, ean);
   const periods = PP.measurePeriods(PP.buildPricePeriods(priceObservations(db, ean), { nowMs, gapHours: config.priceGapHours }), du, short);
   const cur = periods.find((x) => x.isCurrent) || null;
