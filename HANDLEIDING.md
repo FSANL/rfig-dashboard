@@ -35,6 +35,7 @@ Dubbelklik **`autostart-installeren.bat`** (geen beheerdersrechten nodig: er kom
 - Gemiste synchronisaties (pc stond uit) worden bij het opstarten automatisch ingehaald. Orders kunnen tot 3 maanden terug worden ingehaald.
 - Prijs en voorraad kunnen **niet** worden ingehaald: bol geeft alleen de huidige stand. Dagen zonder meting tellen niet mee in de prijsanalyse. Het dashboard verzint daar niets bij.
 - Uitzetten kan met `autostart-verwijderen.bat`.
+- Na een update van de bestanden: dubbelklik `herstart-dashboard.bat` (stopt de achtergrondversie en start de nieuwe).
 - Logboek: `data\server.log`.
 
 ## Back-up
