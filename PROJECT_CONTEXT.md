@@ -35,7 +35,8 @@ test/              node --test (27 tests)
 - **Verkochte stuks** = quantity − quantityCancelled, op **besteldatum** (Amsterdam).
 - **Bestelwaarde incl. btw** = unitPrice × verkochte stuks. **Netto-omzet** = ÷ (1 + btw), standaard 21% (`VAT_RATE`).
 - **Bijdrage vóór advertenties** = netto-omzet − commissie − kosten per stuk. Ontbrekende verplichte soort (KOSTPRIJS, TRANSPORT, FULFILMENT, VERZENDING, VERPAKKING, commissie) ⇒ status ONVOLLEDIG.
-- **Commissie** = gemiddelde per stuk uit orders van de laatste 60 dagen. Aanname: excl. btw — te verifiëren.
+- **Commissie** = per stuk uit orders tegen dezelfde prijs (alleen niet-geannuleerde stuks), anders gemiddeld percentage × prijs. bol-commissie in orders is incl. btw (afgeleid 2026-10-25); bijdrage rekent excl. btw (`COMMISSION_INCLUDES_VAT`).
+- **Gerealiseerde verkoopprijzen** uit orders worden apart getoond (ook vóór start prijsregistratie), maar tellen niet als meetperiode.
 - Tempo's alleen over volledige dagen; vandaag apart.
 
 ## Prijsperioderegels (§12)

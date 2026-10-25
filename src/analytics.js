@@ -69,10 +69,42 @@ function incoming(db, ean, onlyConfirmed = true) {
     .all(ean, D.today());
 }
 
-function commissionPerUnit(db, ean) {
-  const r = db.prepare(`SELECT SUM(commission) c, SUM(quantity - quantity_cancelled) q FROM order_items
-    WHERE ean = ? AND commission IS NOT NULL AND placed_at >= ?`).get(ean, new Date(Date.now() - 60 * 86400000).toISOString());
-  return r && r.q > 0 ? r.c / r.q : null;
+/**
+ * Commissie per stuk excl. btw bij een gegeven verkoopprijs.
+ * - Alleen niet-geannuleerde stuks (commissie van geannuleerde regels telt niet mee).
+ * - bol rapporteert commissie in orders incl. btw (vastgesteld 2026-10-25 uit RFIG-orders: (0,95 + 8%) × 1,21);
+ *   verrekenbare btw is geen kostenpost, dus delen door (1 + btw) — instelbaar via COMMISSION_INCLUDES_VAT.
+ * - Bij voorkeur orders tegen dezelfde prijs; anders het gemiddelde commissiepercentage × prijs (schatting).
+ */
+function commissionPerUnit(db, ean, priceIncl, config) {
+  const rows = db.prepare(`SELECT unit_price, commission, quantity, quantity_cancelled FROM order_items
+    WHERE ean = ? AND commission IS NOT NULL AND unit_price IS NOT NULL AND quantity > 0`).all(ean);
+  const vatDiv = config.commissionIncludesVat === false ? 1 : 1 + config.vatRate;
+  let sameC = 0, sameQ = 0, allC = 0, allRev = 0;
+  for (const r of rows) {
+    const sold = Math.max(0, r.quantity - (r.quantity_cancelled || 0));
+    if (!sold) continue;
+    const c = r.commission * (sold / r.quantity);
+    allC += c; allRev += r.unit_price * sold;
+    if (priceIncl != null && Math.abs(r.unit_price - priceIncl) < 0.005) { sameC += c; sameQ += sold; }
+  }
+  if (sameQ > 0) return { amount: sameC / sameQ / vatDiv, basis: 'BOL', note: `uit ${sameQ} verkochte stuks tegen deze prijs` };
+  if (allRev > 0 && priceIncl != null) return { amount: (allC / allRev) * priceIncl / vatDiv, basis: 'GESCHAT', note: 'geschat: gemiddeld commissiepercentage × huidige prijs' };
+  return null;
+}
+
+/** Gerealiseerde verkoopprijzen uit orders, gegroepeerd in aaneengesloten reeksen (informatief, geen meetperiode). */
+function realizedPriceRuns(db, ean) {
+  const rows = db.prepare(`SELECT placed_at, unit_price, quantity - quantity_cancelled AS sold FROM order_items
+    WHERE ean = ? AND unit_price IS NOT NULL AND quantity - quantity_cancelled > 0 ORDER BY placed_at`).all(ean);
+  const runs = [];
+  for (const r of rows) {
+    const d = D.amsDate(r.placed_at);
+    const last = runs[runs.length - 1];
+    if (last && Math.abs(last.price - r.unit_price) < 0.005) { last.to = d; last.units += r.sold; last.lines += 1; }
+    else runs.push({ price: r.unit_price, from: d, to: d, units: r.sold, lines: 1 });
+  }
+  return runs;
 }
 
 function currentPrice(db, ean) {
@@ -116,10 +148,15 @@ function productView(db, config, ean, nowMs = Date.now()) {
 
   const priceNow = currentPrice(db, ean);
   const costRows = db.prepare('SELECT * FROM costs WHERE ean = ?').all(ean);
+  const comm = priceNow ? commissionPerUnit(db, ean, priceNow.price, config) : null;
   const economics = priceNow ? M.unitEconomics({
-    unitPriceIncl: priceNow.price, vatRate: config.vatRate, commission: commissionPerUnit(db, ean),
+    unitPriceIncl: priceNow.price, vatRate: config.vatRate, commission: comm ? comm.amount : null,
     costs: M.costsOn(costRows, today),
   }) : null;
+  if (economics && comm) {
+    const line = economics.lines.find((l) => l.key === 'COMMISSIE');
+    if (line) { line.basis = comm.basis; line.label = `bol-commissie excl. btw (${comm.note})`; }
+  }
 
   const regStart = getMeta(db, 'price_registration_start');
   return {
@@ -136,6 +173,7 @@ function productView(db, config, ean, nowMs = Date.now()) {
     },
     series: dailySeries(du, short, hs, today),
     stockSeries: stockSeries(db, ean),
+    realizedPrices: realizedPriceRuns(db, ean),
   };
 }
 
@@ -178,7 +216,7 @@ function kpis(db, config, nowMs = Date.now()) {
       units += q; cancelled += it.quantity_cancelled || 0;
       if (q > 0) orders.add(it.order_id);
       if (it.unit_price == null) { if (q > 0) priceUnknown += q; } else gross += it.unit_price * q;
-      if (it.commission != null) commission += it.commission;
+      if (it.commission != null && it.quantity > 0) commission += it.commission * (q / it.quantity); // geannuleerd telt niet mee
     }
     out[k] = {
       ...r, units, orders: orders.size, cancelledUnits: cancelled,

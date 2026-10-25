@@ -190,6 +190,13 @@ async function pageProduct(ean) {
         <p class="small muted">Let op: een prijsverschil bewijst niet automatisch een prijseffect. Seizoen, advertenties, koopblok en beschikbaarheid spelen ook mee.</p>` : ''}
     </section>
 
+    <section class="panel" style="margin-top:14px"><h2>Gerealiseerde verkoopprijzen (uit orders)</h2>
+      <p class="small muted">Wat klanten werkelijk betaalden, ook vóór de start van de prijsregistratie (orderhistorie tot 3 maanden). Dit toont dat er prijzen of acties zijn geweest,
+      maar níet het exacte moment van een wijziging. Daarom tellen deze reeksen niet als meetperiode in de prijsanalyse. Een afwijking van de aangeboden prijs kan ook door een actie of volumekorting komen.</p>
+      ${v.realizedPrices.length ? `<div class="tablewrap"><table><thead><tr><th>Betaalde prijs per stuk</th><th>Eerste order</th><th>Laatste order</th><th class="num">Orderregels</th><th class="num">Stuks</th></tr></thead><tbody>
+        ${v.realizedPrices.map((r) => `<tr><td>${E(r.price)}</td><td>${dd(r.from)}</td><td>${dd(r.to)}</td><td class="num">${r.lines}</td><td class="num">${r.units}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Nog geen orders met prijs.</p>'}
+    </section>
+
     <section class="panel" style="margin-top:14px"><h2>Waargenomen wijzigingen</h2>
       <p class="small muted">Automatisch vastgesteld bij elke synchronisatie door de nieuwe stand bij bol te vergelijken met de vorige meting. Het dashboard wijzigt zelf niets; handmatig loggen is niet nodig.
       Het werkelijke moment ligt tussen "vorige meting" en "waargenomen".</p>
@@ -202,7 +209,7 @@ async function pageProduct(ean) {
         <tr><td>Bijdrage na advertenties</td><td class="num muted">${esc(v.economics.adsNote || '')}</td></tr></tbody></table>
         <div>${v.economics.missing.length ? `<div class="note bad">Ontbrekende kosten (tellen als onbekend, niet als nul): ${esc(v.economics.missing.join(', '))}.</div>` : ''}
           <p>Marge vóór advertenties: <strong>${P(v.economics.marginPct)}</strong></p>
-          <p>Indicatieve break-evenprijs (incl. btw): <strong>${E(v.economics.breakEvenPriceIncl)}</strong><br><span class="small muted">Aanname: commissie schaalt mee met de prijs; commissie uit orders van de laatste 60 dagen (btw-behandeling nog te verifiëren met factuurspecificatie).</span></p></div></div>`
+          <p>Indicatieve break-evenprijs (incl. btw): <strong>${E(v.economics.breakEvenPriceIncl)}</strong><br><span class="small muted">Aanname: commissie schaalt mee met de prijs. Commissie in bol-orders is incl. btw (afgeleid uit RFIG-orders: (€ 0,95 + 8%) × 1,21); hier excl. btw, omdat die btw verrekenbaar is. Bevestigen met een factuurspecificatie.</span></p></div></div>`
         : '<p class="muted">Geen actuele prijs bekend.</p>'}
     </section>
 

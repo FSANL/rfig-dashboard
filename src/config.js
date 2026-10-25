@@ -40,6 +40,7 @@ const config = {
   syncIntervalMinutes: Number(env('SYNC_INTERVAL_MINUTES', '60')),
   priceGapHours: Number(env('PRICE_GAP_HOURS', '36')),
   vatRate: Number(env('VAT_RATE', '0.21')),
+  commissionIncludesVat: env('COMMISSION_INCLUDES_VAT', 'true').toLowerCase() !== 'false',
   historyDays: Math.min(90, Number(env('ORDER_HISTORY_DAYS', '90'))),
   credentials: { retailer, advertising },
   hasRetailer,

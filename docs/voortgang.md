@@ -62,6 +62,6 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 
 ## Openstaande punten
 - Offers v11: exact pad/antwoordformaat bevestigen in de koppeltest.
-- Btw-behandeling van bol-commissie verifiëren.
+- Btw-behandeling bol-commissie: uit RFIG-orders afgeleid dat commissie incl. 21% btw is ((€ 0,95 + 8%) × 1,21, klopt op elke prijs). Dashboard rekent nu excl. btw. Nog bevestigen met een factuurspecificatie.
 - `data\server.log` groeit; rotatie toevoegen.
 - Afsluiten van het venster maakt geen extra back-up (Windows geeft geen betrouwbaar afsluitsignaal); dagelijkse en opstart-back-up dekken dit.
