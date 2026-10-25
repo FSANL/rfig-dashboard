@@ -13,8 +13,10 @@ const { getMeta } = require('./db');
 const FILE = 'RFIG agent-export.xlsx';
 
 function exportDir(config) {
-  if (!config.backupDir) return null;
-  return path.join(config.backupDir, config.mode === 'DEMO' ? 'Agent-export-demo' : 'Agent-export');
+  // Demo nooit in de agentmap: agents mogen geen synthetische gegevens zien.
+  if (config.mode === 'DEMO') return config.backupDir ? path.join(config.backupDir, 'Agent-export-demo') : null;
+  if (config.agentExportDir) return config.agentExportDir;
+  return config.backupDir ? path.join(config.backupDir, 'Agent-export') : null;
 }
 
 const nl = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { timeZone: D.TZ, dateStyle: 'short', timeStyle: 'short' }) : '');
@@ -22,8 +24,9 @@ const yn = (v) => (v == null ? 'onbekend' : v ? 'ja' : 'nee');
 
 function writeAgentExport(db, config, nowMs = Date.now()) {
   const dir = exportDir(config);
-  if (!dir) throw new Error('BACKUP_DIR is niet ingesteld');
-  if (!fs.existsSync(config.backupDir)) throw new Error(`Map niet gevonden: ${config.backupDir}`);
+  if (!dir) throw new Error('AGENT_EXPORT_DIR en BACKUP_DIR zijn niet ingesteld');
+  const base = config.mode !== 'DEMO' && config.agentExportDir ? config.agentExportDir : config.backupDir;
+  if (!fs.existsSync(base)) throw new Error(`Map niet gevonden: ${base} (staat Google Drive voor Desktop aan?)`);
   fs.mkdirSync(dir, { recursive: true });
 
   const status = datasetStatus(db);

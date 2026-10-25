@@ -428,7 +428,7 @@ async function pageData() {
     </section>
 
     <section class="panel" style="margin-top:14px"><h2>Agent-export</h2>
-      <p class="small">Na elke synchronisatie zet het dashboard <code>RFIG agent-export.xlsx</code> in de Drive-map <code>Project Dashboard\\Agent-export</code>, zodat de agents (zoals Ralph) de bol-gegevens kunnen lezen. Geen klantgegevens, geen geheimen.<br>
+      <p class="small">Na elke synchronisatie zet het dashboard <code>RFIG agent-export.xlsx</code> in <code>${esc((s.agentExport && s.agentExport.dir) || '–')}</code>, zodat de agents (zoals Ralph) de bol-gegevens kunnen lezen. Geen klantgegevens, geen geheimen.<br>
       Laatst bijgewerkt: <strong>${dt(s.agentExport && s.agentExport.at)}</strong>${s.agentExport && s.agentExport.error ? ` <span class="tag t-bad">fout</span> <span class="small">${esc(s.agentExport.error)}</span>` : ''}</p>
     </section>
 

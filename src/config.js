@@ -37,6 +37,7 @@ const config = {
   mode: forceDemo || !hasRetailer ? 'DEMO' : 'LIVE',
   dataDir: path.resolve(ROOT, env('DATA_DIR', 'data')),
   backupDir: env('BACKUP_DIR', ''),
+  agentExportDir: env('AGENT_EXPORT_DIR', ''), // map voor RFIG agent-export.xlsx (live); leeg = BACKUP_DIR\Agent-export
   syncIntervalMinutes: Number(env('SYNC_INTERVAL_MINUTES', '60')),
   priceGapHours: Number(env('PRICE_GAP_HOURS', '36')),
   vatRate: Number(env('VAT_RATE', '0.21')),

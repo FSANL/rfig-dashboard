@@ -34,7 +34,7 @@ async function runSync(reason) {
 }
 
 function refreshAgentExport() {
-  if (!config.backupDir) return;
+  if (!config.backupDir && !config.agentExportDir) return;
   try { const r = writeAgentExport(db, config); dbm.setMeta(db, 'agent_export_at', new Date().toISOString()); dbm.setMeta(db, 'agent_export_error', ''); log(`Agent-export bijgewerkt (${Math.round(r.bytes / 1024)} kB)`); }
   catch (e) { dbm.setMeta(db, 'agent_export_error', `${new Date().toISOString()} ${e.message}`); log(`Agent-export mislukt: ${e.message}`); }
 }
@@ -128,7 +128,7 @@ const routes = {
       priceRegistrationStart: dbm.getMeta(db, 'price_registration_start'),
       orderHistoryStart: dbm.getMeta(db, 'orders_history_start'),
       backup: B.status(db, config),
-      agentExport: { at: dbm.getMeta(db, 'agent_export_at'), error: dbm.getMeta(db, 'agent_export_error') },
+      agentExport: { at: dbm.getMeta(db, 'agent_export_at'), error: dbm.getMeta(db, 'agent_export_error'), dir: require('./agentExport').exportDir(config) },
     };
   },
   'GET /api/overview': () => {
