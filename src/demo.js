@@ -65,6 +65,14 @@ function seedDemo(db, nowMs = Date.now()) {
         }
       }
       insOffer.run(offer, p.ean, p.price[p.price.length - 1][1], stock, stock, new Date(nowMs).toISOString());
+      const insCh = db.prepare(`INSERT INTO offer_changes(ean, offer_id, detected_at, previous_observed_at, field, label, type, old_value, new_value, old_text, new_text)
+        VALUES (?,?,?,?, 'unit_price', 'Prijs', 'PRIJS', ?,?,?,?)`);
+      for (let i = 1; i < p.price.length; i++) {
+        const day = D.addDays(today, p.price[i][0]);
+        const f = (x) => `€ ${x.toFixed(2).replace('.', ',')}`;
+        insCh.run(p.ean, offer, new Date(D.startOfDay(day) + 8 * 3600000).toISOString(), new Date(D.startOfDay(D.addDays(day, -1)) + 23 * 3600000).toISOString(),
+          String(p.price[i - 1][1]), String(p.price[i][1]), f(p.price[i - 1][1]), f(p.price[i][1]));
+      }
     }
     // Kosten: bewust onvolledig voor één product, om de "onvolledig"-weergave te tonen.
     const insC = db.prepare("INSERT INTO costs(ean, cost_type, amount, valid_from, basis, source) VALUES (?,?,?,?,?, 'DEMO')");

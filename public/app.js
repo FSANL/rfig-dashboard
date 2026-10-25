@@ -49,7 +49,7 @@ async function refreshHeader() {
 }
 
 // ---------- Router ----------
-const pages = { overzicht: pageOverview, producten: pageProducts, product: pageProduct, seizoen: pageSeason, werkruimte: pageWorkspace, gegevens: pageData };
+const pages = { wijzigingen: pageChanges, overzicht: pageOverview, producten: pageProducts, product: pageProduct, seizoen: pageSeason, werkruimte: pageWorkspace, gegevens: pageData };
 async function route() {
   const [, name = 'overzicht', arg] = (location.hash || '#/overzicht').split('/');
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('href') === `#/${name === 'product' ? 'producten' : name}`));
@@ -188,10 +188,12 @@ async function pageProduct(ean) {
       ${v.priceSummary.length > 1 ? `<h3>Per prijsniveau (gewogen: totale stuks ÷ totale meetdagen)</h3><table><thead><tr><th>Prijs</th><th class="num">Perioden</th><th class="num">Meetdagen</th><th class="num">Stuks</th><th class="num">St/dag</th></tr></thead><tbody>
         ${v.priceSummary.map((x) => `<tr><td>${E(x.price)}</td><td class="num">${x.periods}</td><td class="num">${x.days}</td><td class="num">${x.units}</td><td class="num">${N(x.perDay, 2)}</td></tr>`).join('')}</tbody></table>
         <p class="small muted">Let op: een prijsverschil bewijst niet automatisch een prijseffect. Seizoen, advertenties, koopblok en beschikbaarheid spelen ook mee.</p>` : ''}
-      <h3>Bekende prijswijziging vastleggen</h3>
-      <p class="small muted">Wijzig je de prijs zelf in bol? Leg hier het exacte moment vast. Dat is nauwkeuriger dan de uurlijkse meting. De app wijzigt nooit zelf prijzen.</p>
-      <form id="pcform" class="form"><label class="f">Nieuwe prijs (€)<input name="price" required inputmode="decimal"></label><label class="f">Moment<input name="at" type="datetime-local" required></label>
-        <label class="f">Reden<input name="note"></label><button class="primary">Vastleggen</button></form>
+    </section>
+
+    <section class="panel" style="margin-top:14px"><h2>Waargenomen wijzigingen</h2>
+      <p class="small muted">Automatisch vastgesteld bij elke synchronisatie door de nieuwe stand bij bol te vergelijken met de vorige meting. Het dashboard wijzigt zelf niets; handmatig loggen is niet nodig.
+      Het werkelijke moment ligt tussen "vorige meting" en "waargenomen".</p>
+      ${changesTable(v.changes, false)}
     </section>
 
     <section class="panel" style="margin-top:14px"><h2>Bijdrage per stuk ${v.economics ? tagEcon(v.economics.status) : ''}</h2>
@@ -220,14 +222,33 @@ async function pageProduct(ean) {
       ${v.timeline.length ? `<h3>Tijdlijn van wijzigingen</h3><ul class="small">${v.timeline.map((x) => `<li>${dt(x.at.replace(' ', 'T') + 'Z')} — ${esc(x.action)}</li>`).join('')}</ul>` : ''}
     </section>`;
 
-  $app.querySelector('#pcform').onsubmit = async (e) => {
-    e.preventDefault(); const f = new FormData(e.target);
-    try { await api('/api/price-change', { ean, price: Number(String(f.get('price')).replace(',', '.')), at: new Date(f.get('at')).toISOString(), note: f.get('note') }); toast('Prijswijziging vastgelegd'); route(); } catch (err) { toast(err.message); }
-  };
   $app.querySelector('#pform').onsubmit = async (e) => {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
     try { await api('/api/product', { ean, ...f }); toast('Opgeslagen'); route(); } catch (err) { toast(err.message); }
   };
+}
+
+const CTYPE = { PRIJS: 't-info', STATUS: 't-warn', VOORRAAD: 't-muted', LOGISTIEK: 't-muted', OVERIG: 't-muted' };
+function changesTable(rows, withProduct) {
+  if (!rows.length) return '<p class="muted">Nog geen wijzigingen waargenomen. De eerste synchronisatie legt de beginstand vast; wijzigingen daarna verschijnen hier.</p>';
+  return `<div class="tablewrap"><table><thead><tr><th>Waargenomen</th><th>Vorige meting</th>${withProduct ? '<th>Product</th>' : ''}<th>Soort</th><th>Wat</th><th>Was</th><th>Wordt</th><th>Laatst gewijzigd volgens bol</th></tr></thead><tbody>
+    ${rows.map((c) => `<tr${withProduct ? ` class="click" onclick="location.hash='#/product/${c.ean}'"` : ''}><td>${dt(c.detected_at)}</td><td class="small">${dt(c.previous_observed_at)}${c.previous_observed_at && Date.parse(c.detected_at) - Date.parse(c.previous_observed_at) > 6 * 3600e3 ? ' <span class="tag t-warn">lange tussenpoos</span>' : ''}</td>
+      ${withProduct ? `<td>${esc(c.title || c.ean)}</td>` : ''}<td><span class="tag ${CTYPE[c.type] || 't-muted'}">${esc((c.type || '').toLowerCase())}</span></td><td>${esc(c.label)}</td><td>${esc(c.old_text)}</td><td><strong>${esc(c.new_text)}</strong></td><td class="small">${dt(c.bol_modified_at)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+async function pageChanges() {
+  const d = await api('/api/changes?days=365');
+  let type = store.get('chtype', '');
+  const draw = () => { $app.querySelector('#chlist').innerHTML = changesTable(d.rows.filter((r) => !type || r.type === type), true); };
+  $app.innerHTML = `<h1>Waargenomen wijzigingen</h1>
+    <p class="muted small">Alle wijzigingen die het dashboard bij bol heeft gezien: prijs, staffelprijs, te koop NL/BE, pauze, fulfilment, levertijd, opgegeven voorraad en uitverkocht/weer verkoopbaar.
+    Waarneming sinds ${dt(d.since)}. Wijzigingen terwijl de pc uit stond worden bij de eerstvolgende synchronisatie gezien; het exacte moment is dan onbekend (tussen "vorige meting" en "waargenomen").
+    Niet zichtbaar via de koppeling: wijzigingen in productcontent (titel, beschrijving, afbeeldingen) en advertenties.</p>
+    <div class="row"><label class="f">Soort<select id="chtype"><option value="">Alles</option>${Object.keys(CTYPE).map((k) => `<option value="${k}" ${type === k ? 'selected' : ''}>${k.toLowerCase()}</option>`).join('')}</select></label><span class="spacer"></span><button id="chcsv">Export CSV</button></div>
+    <div class="panel" style="margin-top:10px" id="chlist"></div>`;
+  $app.querySelector('#chtype').onchange = (e) => { type = e.target.value; store.set('chtype', type); draw(); };
+  $app.querySelector('#chcsv').onclick = () => downloadCsv('rfig-wijzigingen.csv', d.rows.map((r) => ({ waargenomen: r.detected_at, vorige_meting: r.previous_observed_at, ean: r.ean, product: r.title, soort: r.type, wat: r.label, was: r.old_text, wordt: r.new_text, bol_gewijzigd: r.bol_modified_at })));
+  draw();
 }
 
 function summDays(list) {

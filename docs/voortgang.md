@@ -32,6 +32,8 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 | Mijn werkruimte: notities, hypotheses, inzichten, wensen → Claude-opdracht | ✅ |
 | Duurzame opslag (SQLite) + back-up naar Drive + maandelijkse hersteltest | ✅ |
 | Autostart bij inloggen + inhalen gemiste orders | ✅ |
+| Automatische waarneming van wijzigingen per product (prijs, staffel, status NL/BE, pauze, fulfilment, levertijd, voorraad, uitverkocht, aanbieding verdwenen) | ✅ |
+| Geen handmatige invoer van prijswijzigingen nodig (waarnemingstool) | ✅ |
 | Eigen dashboards met versleepbare widgets | ⏳ |
 | Formulebouwer eigen KPI's | ⏳ |
 | Eigen regels ("als … dan voorstel …") | ⏳ |
@@ -53,7 +55,7 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 - [ ] Kloppen omzet, aantallen en voorraad met het partnerdashboard (3 producten, 5 orders)?
 - [ ] Zijn kosten compleet, of duidelijk gemarkeerd als onvolledig?
 - [ ] Zijn de uitverkoopprognoses voor de dekens begrijpelijk?
-- [ ] Worden prijswijzigingsdagen correct uitgesloten (test: prijs wijzigen en vastleggen)?
+- [ ] Worden prijswijzigingen automatisch waargenomen en wijzigingsdagen correct uitgesloten (test: laat iemand de prijs in bol wijzigen)?
 - [ ] Blijven doelen, notities en wensen bewaard na herstart?
 - [ ] Is zichtbaar wanneer gegevens verouderd zijn (pc een dag uit laten)?
 - [ ] Is commissie in bol excl. of incl. btw? (vergelijk met factuurspecificatie)

@@ -140,6 +140,7 @@ const routes = {
     v.costs = db.prepare('SELECT * FROM costs WHERE ean = ? ORDER BY cost_type, valid_from').all(v.product.ean);
     v.notes = db.prepare('SELECT * FROM workspace_items WHERE ean = ? ORDER BY created_at DESC').all(v.product.ean);
     v.timeline = db.prepare("SELECT at, action, detail FROM change_log WHERE entity_id = ? ORDER BY at DESC LIMIT 50").all(v.product.ean);
+    v.changes = db.prepare('SELECT * FROM offer_changes WHERE ean = ? ORDER BY detected_at DESC LIMIT 200').all(v.product.ean);
     v.costTypes = COST_TYPES;
     return v;
   },
@@ -153,7 +154,13 @@ const routes = {
   'POST /api/import/preview': (q, b) => I.preview(db, b.kind, b.rows || []),
   'POST /api/import/commit': (q, b) => I.commit(db, b.kind, b.rows || [], { filename: b.filename, overwrite: !!b.overwrite }),
   'GET /api/imports': () => db.prepare('SELECT * FROM imports ORDER BY id DESC LIMIT 50').all(),
-  'GET /api/targets': () => db.prepare('SELECT * FROM targets ORDER BY ean').all(),
+  'GET /api/changes': (q) => {
+    const days = Math.min(730, Number(q.get('days') || 90));
+    const rows = db.prepare(`SELECT c.*, p.title FROM offer_changes c LEFT JOIN products p ON p.ean = c.ean WHERE c.detected_at >= ? ORDER BY c.detected_at DESC LIMIT 2000`)
+      .all(new Date(Date.now() - days * 86400000).toISOString());
+    return { since: dbm.getMeta(db, 'price_registration_start'), rows };
+  },
+  'GET /api/targets':() => db.prepare('SELECT * FROM targets ORDER BY ean').all(),
   'POST /api/targets': (q, b) => { I.upsertTarget(db, { end_stock: 0, min_measure_days: 7, tolerance_days: 7, ...b }); return { ok: true }; },
   'POST /api/product': (q, b) => {
     const p = db.prepare('SELECT * FROM products WHERE ean = ?').get(b.ean);
@@ -161,14 +168,6 @@ const routes = {
     const f = ['title', 'sku', 'variant', 'product_group', 'season_type', 'owner', 'tags'];
     for (const k of f) if (k in b) db.prepare(`UPDATE products SET ${k} = ?${k === 'title' ? ", title_source = 'HANDMATIG'" : ''} WHERE ean = ?`).run(b[k] === '' ? null : b[k], b.ean);
     dbm.log(db, 'product', b.ean, 'WIJZIGING', b);
-    return { ok: true };
-  },
-  'POST /api/price-change': (q, b) => {
-    // Handmatig vastleggen van een bekende prijswijziging met exact moment.
-    const at = new Date(b.at);
-    if (!b.ean || !Number.isFinite(Number(b.price)) || Number.isNaN(at.getTime())) throw httpErr(400, 'EAN, prijs en tijdstip zijn verplicht');
-    db.prepare("INSERT INTO price_observations(ean, observed_at, unit_price, exact_change, source, note) VALUES (?,?,?,1,'HANDMATIG',?)").run(b.ean, at.toISOString(), Number(b.price), b.note || null);
-    dbm.log(db, 'price', b.ean, 'PRIJSWIJZIGING_VASTGELEGD', { at: at.toISOString(), price: Number(b.price), reason: b.note || null });
     return { ok: true };
   },
   'GET /api/workspace': () => db.prepare('SELECT * FROM workspace_items ORDER BY updated_at DESC').all(),

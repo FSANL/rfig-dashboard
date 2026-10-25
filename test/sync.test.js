@@ -10,6 +10,7 @@ const { makeSync, datasetStatus } = require('../src/sync');
 
 function fakeBol() {
   const calls = [];
+  const offer = { offerId: 'o1', ean: '8712345678906', pricing: { bundlePrices: [{ quantity: 1, unitPrice: 59.99 }] }, fulfilment: { method: 'FBR', schedule: 'BOL_DELIVERY_PROMISE', deliveryPromise: { minimumDaysToCustomer: 0, maximumDaysToCustomer: 1, ultimateOrderTime: '22:00' } }, stock: { amount: 400, correctedStock: 398 }, countryAvailabilities: [{ countryCode: 'NL', forSale: true }], lastModifiedDateTime: '2026-10-25T10:00:00+01:00' };
   let tokens = 0;
   const json = (status, body, headers = {}) => ({ ok: status < 400, status, headers: { get: (k) => headers[k.toLowerCase()] ?? null }, json: async () => body, text: async () => JSON.stringify(body) });
   const fetchImpl = async (url, opts = {}) => {
@@ -17,7 +18,7 @@ function fakeBol() {
     calls.push({ path: u.pathname, q: Object.fromEntries(u.searchParams), accept: opts.headers && opts.headers.Accept, method: opts.method || 'GET' });
     if (u.host === 'login.bol.com') { tokens++; return json(200, { access_token: 'h.' + Buffer.from(JSON.stringify({ retailer_id: '123', exp: 1 })).toString('base64url') + '.s', expires_in: 299 }); }
     if (u.pathname === '/retailer/retailers/123') return json(200, { displayName: 'RFIG Products' });
-    if (u.pathname === '/retailer/offers') return json(200, { offers: [{ offerId: 'o1', ean: '8712345678906', pricing: { bundlePrices: [{ quantity: 1, unitPrice: 59.99 }] }, fulfilment: { method: 'FBR' }, stock: { amount: 400, correctedStock: 398 }, countryAvailabilities: [{ countryCode: 'NL', forSale: true }] }], page: { nextCursor: null } });
+    if (u.pathname === '/retailer/offers') return json(200, { offers: [JSON.parse(JSON.stringify(offer))], page: { nextCursor: null } });
     if (u.pathname === '/retailer/inventory') return json(200, { inventory: [] });
     if (u.pathname === '/retailer/orders') {
       if (u.searchParams.get('status') === 'OPEN' || u.searchParams.get('page') !== '1') return json(200, { orders: [] });
@@ -29,7 +30,7 @@ function fakeBol() {
     if (u.pathname === '/retailer/returns') return json(200, { returns: [] });
     return json(404, {});
   };
-  return { fetchImpl, calls, tokenCount: () => tokens };
+  return { fetchImpl, calls, offer, tokenCount: () => tokens };
 }
 
 test('live-synchronisatie: alleen GET, token hergebruikt, gegevens vastgelegd, geen persoonsgegevens', async () => {
@@ -60,4 +61,26 @@ test('live-synchronisatie: alleen GET, token hergebruikt, gegevens vastgelegd, g
   await s.syncAll();
   assert.ok(bol.calls.some((c) => c.q['change-interval-minute'] === '60'));
   assert.ok(!bol.calls.some((c) => c.q['latest-change-date']));
+
+  // Iemand anders wijzigt in bol: prijs, pauze, levertijd en voorraad op 0. Het dashboard moet dit zelf waarnemen.
+  assert.equal(db.prepare('SELECT COUNT(*) c FROM offer_changes').get().c, 0, 'beginstand is geen wijziging');
+  bol.offer.pricing.bundlePrices = [{ quantity: 1, unitPrice: 62.99 }];
+  bol.offer.onHoldByRetailer = true;
+  bol.offer.fulfilment.deliveryPromise = { minimumDaysToCustomer: 1, maximumDaysToCustomer: 2 };
+  bol.offer.stock = { amount: 0, correctedStock: 0 };
+  await s.syncAll();
+  const ch = db.prepare('SELECT field, old_text, new_text, previous_observed_at FROM offer_changes ORDER BY id').all();
+  const f = Object.fromEntries(ch.map((c) => [c.field, c]));
+  assert.equal(f.unit_price.old_text, '€ 59,99');
+  assert.equal(f.unit_price.new_text, '€ 62,99');
+  assert.equal(f.on_hold.new_text, 'ja');
+  assert.ok(f.delivery, 'levertijd gewijzigd');
+  assert.ok(f.stock_amount && f.sellable, 'voorraad en uitverkocht');
+  assert.ok(!f.bundle_prices, 'geen dubbele melding bij enkele prijs');
+  assert.ok(f.unit_price.previous_observed_at, 'vorige meting bekend');
+  assert.equal(db.prepare('SELECT COUNT(DISTINCT unit_price) c FROM price_observations').get().c, 2);
+  // Geen wijziging = geen melding
+  const before = db.prepare('SELECT COUNT(*) c FROM offer_changes').get().c;
+  await s.syncAll();
+  assert.equal(db.prepare('SELECT COUNT(*) c FROM offer_changes').get().c, before);
 });

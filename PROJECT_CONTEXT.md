@@ -27,6 +27,8 @@ test/              node --test (27 tests)
 
 ## Datamodel (kern)
 - `products` (EAN tekst, handmatige velden), `offers`, `price_observations` (elke meting + handmatige exacte wijzigingen), `stock_snapshots` (per locatie, per meting), `orders`/`order_items` (alleen landcode als persoonsgegeven), `costs` (per stuk excl. btw, geldig vanaf/tot, GEBOEKT/GESCHAT), `external_stock` (PackFeed-import), `incoming_stock`, `targets` (per EAN of `GROEP:<naam>`), `workspace_items`, `imports`, `sync_runs`, `change_log`, `meta`.
+- `offer_changes`: automatisch waargenomen wijzigingen (vergelijking met vorige stand per synchronisatie; `src/changes.js`). Eerste synchronisatie = beginstand, geen wijzigingen. Wijzigingen in productcontent en advertenties zijn niet zichtbaar via deze koppeling.
+- Waarnemingstool: er is geen handmatige invoer van prijswijzigingen (besluit Ivo 2026-10-25); wijzigingen worden door anderen in bol gedaan.
 - Synchronisatie schrijft nooit in `costs`, `targets`, `workspace_items` of handmatige productvelden.
 
 ## KPI-definities

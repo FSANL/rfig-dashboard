@@ -53,9 +53,10 @@ Dubbelklik **`autostart-installeren.bat`**. Daarna start het dashboard onzichtba
 | Producten | Tabel met eigen kolommen, sortering, zoeken en CSV-export |
 | Product (klik op een rij) | Tempo per berekeningsbasis, prijsperioden, uitverkoopprognose, bijdrage per stuk |
 | Seizoensvoorraad | Ligt elke variant op koers voor de doeldatum? |
+| Wijzigingen | Alle automatisch waargenomen wijzigingen bij bol, met CSV-export |
 | Mijn werkruimte | Notities, hypotheses, inzichten, wensen en taken; een wens exporteren als Claude-opdracht |
 | Gegevens & instellingen | Koppeltest, back-up, doelen, import, export |
 
-**Prijs wijzigen:** dat doe je zelf in bol. Leg daarna in het dashboard (productpagina → "Bekende prijswijziging vastleggen") het exacte moment vast. Dat is nauwkeuriger dan de meting per uur.
+**Wijzigingen:** het dashboard is een waarnemingstool. Het wijzigt niets in bol en je hoeft niets handmatig te loggen. Wijzigingen die iemand anders in bol doet (prijs, staffelprijs, te koop NL/BE, pauze, fulfilment, levertijd, voorraad, uitverkocht) ziet het dashboard zelf bij de volgende synchronisatie. Je vindt ze onder **Wijzigingen** en per product. Stond de pc uit, dan ligt het moment tussen "vorige meting" en "waargenomen".
 
 **Kosten en voorraad PackFeed:** vul het Excel-importtemplate in (link op Gegevens → Import). Laat onbekende kosten leeg, niet op 0 zetten: het dashboard toont dan "onvolledig".

@@ -204,6 +204,13 @@ function attention(db, config, products, syncRows, nowMs = Date.now()) {
     const failed = syncRows.filter((r) => r.lastStatus === 'MISLUKT');
     if (failed.length) push(2, { title: 'Synchronisatie mislukt', reason: failed.map((f) => `${f.label}: ${f.lastMessage}`).join(' · '), impact: 'Laatste goede gegevens blijven zichtbaar', next: 'Controleer de koppeltest', kind: 'FEIT', link: '#/gegevens' });
   }
+  const since = new Date(nowMs - 24 * 3600000).toISOString();
+  const recent = db.prepare("SELECT ean, label, old_text, new_text, previous_observed_at, detected_at FROM offer_changes WHERE detected_at >= ? AND type IN ('PRIJS','STATUS','LOGISTIEK') ORDER BY detected_at DESC").all(since);
+  if (recent.length) {
+    const titles = Object.fromEntries(products.map((p) => [p.product.ean, p.product.title || p.product.ean]));
+    push(3, { title: `${recent.length} wijziging(en) waargenomen in de laatste 24 uur`, reason: recent.slice(0, 3).map((c) => `${short(titles[c.ean] || c.ean)}: ${c.label} ${c.old_text} → ${c.new_text}`).join(' · '),
+      impact: 'Tempo bij de nieuwe situatie is pas na volledige meetdagen te beoordelen', next: 'Bekijk de wijzigingen en volg het effect', kind: 'FEIT', link: '#/wijzigingen' });
+  }
   for (const v of products) {
     const name = v.product.title || v.product.ean;
     const s = v.season && v.season.status;
@@ -222,6 +229,7 @@ function attention(db, config, products, syncRows, nowMs = Date.now()) {
   return items.sort((a, b) => a.prio - b.prio).slice(0, 5);
 }
 
+function short(t) { return t.length > 40 ? t.slice(0, 38) + '…' : t; }
 function fmt(x) { return x == null ? '?' : x.toLocaleString('nl-NL', { maximumFractionDigits: 1 }); }
 
 module.exports = { productView, kpis, attention, dailyUnits, stockNow };

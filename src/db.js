@@ -100,6 +100,14 @@ CREATE TABLE IF NOT EXISTS sync_runs (
 );
 CREATE INDEX IF NOT EXISTS ix_sync ON sync_runs(dataset, finished_at);
 
+-- Automatisch waargenomen wijzigingen per aanbieding (prijs, status, voorraad, logistiek).
+CREATE TABLE IF NOT EXISTS offer_changes (
+  id INTEGER PRIMARY KEY, ean TEXT NOT NULL, offer_id TEXT,
+  detected_at TEXT NOT NULL, previous_observed_at TEXT, bol_modified_at TEXT,
+  field TEXT NOT NULL, label TEXT, type TEXT, old_value TEXT, new_value TEXT, old_text TEXT, new_text TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_changes_ean ON offer_changes(ean, detected_at);
+
 CREATE TABLE IF NOT EXISTS change_log (
   id INTEGER PRIMARY KEY, at TEXT DEFAULT (datetime('now')), entity TEXT, entity_id TEXT, action TEXT, detail TEXT
 );
@@ -110,8 +118,18 @@ function open(file) {
   const db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   db.exec(SCHEMA);
+  migrate(db);
   db.prepare("INSERT INTO meta(key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO NOTHING").run(String(SCHEMA_VERSION));
   return db;
+}
+
+/** Kolommen toevoegen aan bestaande databases zonder gegevens te verliezen. */
+function migrate(db) {
+  const cols = (t) => new Set(db.prepare(`PRAGMA table_info(${t})`).all().map((c) => c.name));
+  const offers = cols('offers');
+  if (!offers.has('bundle_prices')) db.exec('ALTER TABLE offers ADD COLUMN bundle_prices TEXT');
+  if (!offers.has('delivery')) db.exec('ALTER TABLE offers ADD COLUMN delivery TEXT');
+  if (!offers.has('removed')) db.exec('ALTER TABLE offers ADD COLUMN removed INTEGER DEFAULT 0');
 }
 
 function getMeta(db, key, d = null) {

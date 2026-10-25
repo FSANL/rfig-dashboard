@@ -6,6 +6,7 @@
 const D = require('./calc/dates');
 const { getMeta, setMeta, tx } = require('./db');
 const { createClient, V10, V11 } = require('./bol/client');
+const { detectChanges, deliveryText } = require('./changes');
 
 const DATASETS = {
   ACCOUNT: 'Account (juiste RFIG-account?)',
@@ -68,11 +69,17 @@ function makeSync(db, config, { fetchImpl } = {}) {
       pages++;
     } while (cursor && pages < 100);
 
+    const firstRun = db.prepare('SELECT COUNT(*) c FROM offers').get().c === 0;
+    let changes = 0;
     tx(db, () => {
-      const upOffer = db.prepare(`INSERT INTO offers(offer_id, ean, reference, fulfilment_method, on_hold, for_sale_nl, for_sale_be, unit_price, stock_amount, corrected_stock, last_modified, updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(offer_id) DO UPDATE SET ean=excluded.ean, reference=excluded.reference, fulfilment_method=excluded.fulfilment_method,
+      const upOffer = db.prepare(`INSERT INTO offers(offer_id, ean, reference, fulfilment_method, on_hold, for_sale_nl, for_sale_be, unit_price, stock_amount, corrected_stock, last_modified, updated_at, bundle_prices, delivery)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(offer_id) DO UPDATE SET ean=excluded.ean, reference=excluded.reference, fulfilment_method=excluded.fulfilment_method,
         on_hold=excluded.on_hold, for_sale_nl=excluded.for_sale_nl, for_sale_be=excluded.for_sale_be, unit_price=excluded.unit_price,
-        stock_amount=excluded.stock_amount, corrected_stock=excluded.corrected_stock, last_modified=excluded.last_modified, updated_at=excluded.updated_at`);
+        stock_amount=excluded.stock_amount, corrected_stock=excluded.corrected_stock, last_modified=excluded.last_modified, updated_at=excluded.updated_at,
+        bundle_prices=excluded.bundle_prices, delivery=excluded.delivery`);
+      const getPrev = db.prepare('SELECT * FROM offers WHERE offer_id = ?');
+      const insChange = db.prepare(`INSERT INTO offer_changes(ean, offer_id, detected_at, previous_observed_at, bol_modified_at, field, label, type, old_value, new_value, old_text, new_text)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
       const insProd = db.prepare("INSERT INTO products(ean, title, title_source) VALUES (?, ?, 'BOL') ON CONFLICT(ean) DO NOTHING");
       const insPrice = db.prepare("INSERT INTO price_observations(ean, offer_id, observed_at, unit_price, source) VALUES (?,?,?,?, 'SYNC')");
       const insStock = db.prepare("INSERT INTO stock_snapshots(ean, location, observed_at, amount, sellable, source) VALUES (?,?,?,?,?, 'SYNC')");
@@ -86,16 +93,39 @@ function makeSync(db, config, { fetchImpl } = {}) {
         const fs = (cc) => { const c = ca.find((x) => x.countryCode === cc); return c ? (c.forSale ? 1 : 0) : null; };
         const method = (o.fulfilment && o.fulfilment.method) || null;
         const stock = o.stock || {};
+        const next = {
+          offer_id: o.offerId, unit_price: price, on_hold: o.onHoldByRetailer ? 1 : 0, for_sale_nl: fs('NL'), for_sale_be: fs('BE'),
+          fulfilment_method: method, reference: o.reference ?? null, stock_amount: stock.amount ?? null, corrected_stock: stock.correctedStock ?? null,
+          bundle_prices: JSON.stringify(bp.map((b) => ({ quantity: Number(b.quantity), unitPrice: Number(b.unitPrice ?? b.price) }))),
+          delivery: deliveryText(o.fulfilment),
+        };
+        const prev = getPrev.get(o.offerId);
+        // Kolommen die in een oudere versie nog niet bestonden, niet als wijziging melden.
+        if (prev) for (const k of ['bundle_prices', 'delivery']) if (prev[k] == null) prev[k] = next[k];
+        for (const c of detectChanges(prev, next, { firstRun })) {
+          insChange.run(ean, o.offerId, now, prev ? prev.updated_at : null, o.lastModifiedDateTime ?? null, c.field, c.label, c.type,
+            c.old_value == null ? null : String(c.old_value), c.new_value == null ? null : String(c.new_value), c.old_text, c.new_text);
+          changes++;
+        }
         upOffer.run(o.offerId, ean, o.reference ?? null, method, o.onHoldByRetailer ? 1 : 0, fs('NL'), fs('BE'), price,
-          stock.amount ?? null, stock.correctedStock ?? null, o.lastModifiedDateTime ?? null, now);
+          stock.amount ?? null, stock.correctedStock ?? null, o.lastModifiedDateTime ?? null, now, next.bundle_prices, next.delivery);
         insProd.run(ean, o.unknownProductTitle || null);
         if (Number.isFinite(price)) insPrice.run(ean, o.offerId, now, price);
         if (method === 'FBR') insStock.run(ean, 'BOL_FBR', now, stock.amount ?? null, stock.correctedStock ?? stock.amount ?? null);
         n++;
       }
+      // Aanbiedingen die niet meer in de lijst staan.
+      const seenIds = new Set(seen.map((o) => o.offerId));
+      for (const old of db.prepare("SELECT * FROM offers WHERE updated_at IS NOT NULL AND (removed IS NULL OR removed = 0)").all()) {
+        if (seenIds.has(old.offer_id)) continue;
+        insChange.run(old.ean, old.offer_id, now, old.updated_at, null, 'offer', 'Aanbieding niet meer gevonden bij bol', 'STATUS', old.offer_id, null, 'actief', 'niet gevonden');
+        db.prepare('UPDATE offers SET removed = 1 WHERE offer_id = ?').run(old.offer_id);
+        changes++;
+      }
+      db.prepare(`UPDATE offers SET removed = 0 WHERE offer_id IN (${seen.map(() => '?').join(',') || "''"})`).run(...seen.map((o) => o.offerId));
     });
     if (!getMeta(db, 'price_registration_start') && n > 0) setMeta(db, 'price_registration_start', now);
-    return { records: n, message: `${n} aanbiedingen; prijs- en voorraadmeting vastgelegd` };
+    return { records: n, message: `${n} aanbiedingen; prijs- en voorraadmeting vastgelegd${firstRun ? ' (beginstand, nog geen wijzigingen)' : `; ${changes} wijziging(en) waargenomen`}` };
   }
 
   // ---------- Voorraad FBB ----------
