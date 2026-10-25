@@ -178,7 +178,7 @@ function preview(db, kind, rows) {
     if (!errors.length) {
       const k = keyOf(kind, data);
       if (seen.has(k)) status = 'DUBBEL_IN_BESTAND';
-      else if (existing(db, kind, data)) status = 'BESTAAT_AL';
+      else if (existing(db, kind, data)) status = kind === 'PRODUCTEN' ? 'BIJWERKEN' : 'BESTAAT_AL';
       seen.add(k);
     }
     return { line: i + 2, status, errors, data };
@@ -196,6 +196,7 @@ function commit(db, kind, rows, { filename = null, overwrite = false } = {}) {
     for (const r of pv.rows) {
       if (r.status === 'FOUT') { err++; continue; }
       if (r.status === 'DUBBEL_IN_BESTAND' || (r.status === 'BESTAAT_AL' && !overwrite)) { skipped++; continue; }
+      // Producten: altijd bijwerken; lege cellen laten bestaande waarden staan.
       write(db, kind, r.data, imp);
       ok++;
     }

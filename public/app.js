@@ -455,11 +455,11 @@ function setupImport() {
     try {
       const pv = await api('/api/import/preview', { kind: kindSel.value, rows });
       const cnt = (s) => pv.rows.filter((r) => r.status === s).length;
-      const lab = { NIEUW: 't-good', BESTAAT_AL: 't-info', DUBBEL_IN_BESTAND: 't-warn', FOUT: 't-bad' };
+      const lab = { NIEUW: 't-good', BIJWERKEN: 't-good', BESTAAT_AL: 't-info', DUBBEL_IN_BESTAND: 't-warn', FOUT: 't-bad' };
       $app.querySelector('#iresult').innerHTML = `<h3>Proefimport: ${esc(pv.label)}</h3>
         <p class="small">Kolomherkenning: ${Object.entries(pv.mapping).map(([k, v]) => `<code>${esc(v)}</code> → ${esc(k)}`).join(', ') || 'geen'}${pv.unmappedHeaders.length ? ` · niet gebruikt: ${pv.unmappedHeaders.map(esc).join(', ')}` : ''}</p>
         ${pv.missingRequired.length ? `<div class="note bad">Verplichte kolommen ontbreken: ${pv.missingRequired.join(', ')}</div>` : ''}
-        <p>${cnt('NIEUW')} nieuw · ${cnt('BESTAAT_AL')} bestaat al · ${cnt('DUBBEL_IN_BESTAND')} dubbel in bestand · <strong>${cnt('FOUT')} fout</strong></p>
+        <p>${cnt('NIEUW')} nieuw · ${cnt('BIJWERKEN') ? cnt('BIJWERKEN') + ' bijwerken · ' : ''}${cnt('BESTAAT_AL')} bestaat al · ${cnt('DUBBEL_IN_BESTAND')} dubbel in bestand · <strong>${cnt('FOUT')} fout</strong></p>
         <div class="tablewrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>Regel</th><th>Status</th><th>Gegevens</th><th>Fouten</th></tr></thead><tbody>
         ${pv.rows.slice(0, 300).map((r) => `<tr><td>${r.line}</td><td><span class="tag ${lab[r.status]}">${r.status.replace(/_/g, ' ').toLowerCase()}</span></td><td class="small">${esc(Object.entries(r.data).filter(([, v]) => v != null).map(([k, v]) => `${k}: ${v}`).join(' · '))}</td><td class="small">${esc(r.errors.join('; '))}</td></tr>`).join('')}</tbody></table></div>
         <div class="row" style="margin-top:10px"><button id="icommit" class="primary" ${pv.missingRequired.length ? 'disabled' : ''}>Vastleggen</button><span class="small muted">Regels met fouten en dubbele regels worden overgeslagen${$app.querySelector('#iover').checked ? '' : ', bestaande records ook (vink "bijwerken" aan om te overschrijven)'}.</span></div>`;
