@@ -31,7 +31,7 @@ De eerste synchronisatie haalt orders van de afgelopen 3 maanden op. Dat kan enk
 
 ## Automatisch starten bij inloggen
 
-Dubbelklik **`autostart-installeren.bat`**. Daarna start het dashboard onzichtbaar zodra je inlogt op Windows.
+Dubbelklik **`autostart-installeren.bat`** (geen beheerdersrechten nodig: er komt een opstartbestand in je map Opstarten). Daarna start het dashboard onzichtbaar zodra je inlogt op Windows.
 - Gemiste synchronisaties (pc stond uit) worden bij het opstarten automatisch ingehaald. Orders kunnen tot 3 maanden terug worden ingehaald.
 - Prijs en voorraad kunnen **niet** worden ingehaald: bol geeft alleen de huidige stand. Dagen zonder meting tellen niet mee in de prijsanalyse. Het dashboard verzint daar niets bij.
 - Uitzetten kan met `autostart-verwijderen.bat`.
