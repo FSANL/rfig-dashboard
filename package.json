@@ -1,0 +1,12 @@
+{
+  "name": "rfig-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dashboard voor het bol-verkoopaccount van RFIG Products B.V. (alleen-lezen koppeling, lokaal)",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --test"
+  },
+  "license": "UNLICENSED"
+}

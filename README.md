@@ -1,9 +1,12 @@
 # rfig-dashboard
 
-Dashboard voor het bol-verkoopaccount van RFIG Products B.V.
+Dashboard voor het bol-verkoopaccount van RFIG Products B.V. Draait lokaal op Windows; leest bol alleen uit.
 
-Status: in opbouw. Nog geen code en geen koppelingen.
+- Starten en gebruik: [HANDLEIDING.md](HANDLEIDING.md)
+- Voor doorbouwen: [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)
+- Voortgang en checklist: [docs/voortgang.md](docs/voortgang.md)
+- Databronnen: [docs/datamatrix.md](docs/datamatrix.md)
 
-- Broncode: deze privé-repository.
-- Hosting: Vercel (nog in te richten, na akkoord op kosten).
-- API-geheimen staan nooit in deze repository. Ze worden als beveiligde omgevingsvariabelen in Vercel gezet.
+API-geheimen staan nooit in deze repository: alleen in het lokale bestand `.env` (staat in `.gitignore`).
+
+Tests: `npm test`.

@@ -1,0 +1,7 @@
+# Geheimen en lokale gegevens nooit in GitHub
+.env
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+node_modules/

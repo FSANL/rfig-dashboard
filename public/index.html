@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RFIG Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f5f5b'/%3E%3Cpath d='M8 22l5-6 4 3 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo"></span><div><strong>RFIG Dashboard</strong><small>bol-verkoopaccount</small></div></div>
+    <nav id="nav">
+      <a href="#/overzicht">Overzicht</a>
+      <a href="#/producten">Producten</a>
+      <a href="#/seizoen">Seizoensvoorraad</a>
+      <a href="#/werkruimte">Mijn werkruimte</a>
+      <a href="#/gegevens">Gegevens &amp; instellingen</a>
+    </nav>
+    <div id="syncbadge" class="syncbadge"></div>
+  </header>
+  <div id="modebanner"></div>
+  <main id="app" tabindex="-1"><p class="muted">Laden…</p></main>
+  <footer class="foot">Alleen-lezen koppeling met bol · tijdzone Europe/Amsterdam · <a href="/docs/datamatrix.md" target="_blank">datamatrix</a> · <a href="/docs/voortgang.md" target="_blank">voortgang</a></footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
