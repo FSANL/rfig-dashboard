@@ -427,6 +427,11 @@ async function pageData() {
       <details><summary class="small">Aanwezige back-ups (${s.backup.backups.length})</summary><ul class="small">${s.backup.backups.map((b) => `<li>${esc(b.name)} — ${Math.round(b.bytes / 1024)} kB</li>`).join('')}</ul></details>
     </section>
 
+    <section class="panel" style="margin-top:14px"><h2>Agent-export</h2>
+      <p class="small">Na elke synchronisatie zet het dashboard <code>RFIG agent-export.xlsx</code> in de Drive-map <code>Project Dashboard\\Agent-export</code>, zodat de agents (zoals Ralph) de bol-gegevens kunnen lezen. Geen klantgegevens, geen geheimen.<br>
+      Laatst bijgewerkt: <strong>${dt(s.agentExport && s.agentExport.at)}</strong>${s.agentExport && s.agentExport.error ? ` <span class="tag t-bad">fout</span> <span class="small">${esc(s.agentExport.error)}</span>` : ''}</p>
+    </section>
+
     <section class="panel" style="margin-top:14px"><h2>Doelen en prijsgrenzen</h2>
       <p class="small muted">Per EAN, of per productgroep met <code>GROEP:&lt;naam&gt;</code> (bv. GROEP:Dekens). Een doel per EAN gaat vóór het groepsdoel.</p>
       <div class="tablewrap"><table><thead><tr><th>EAN / groep</th><th>Doeldatum</th><th class="num">Eindvoorraad</th><th class="num">Min. prijs</th><th class="num">Max. prijs</th><th class="num">Prijsstap</th><th class="num">Min. meetdagen</th><th class="num">Marge (dagen)</th></tr></thead>

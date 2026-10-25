@@ -34,6 +34,7 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 | Autostart bij inloggen + inhalen gemiste orders | ✅ |
 | Automatische waarneming van wijzigingen per product (prijs, staffel, status NL/BE, pauze, fulfilment, levertijd, voorraad, uitverkocht, aanbieding verdwenen) | ✅ |
 | Geen handmatige invoer van prijswijzigingen nodig (waarnemingstool) | ✅ |
+| Agent-export (RFIG agent-export.xlsx in Drive, na elke synchronisatie) voor de RFIG-agents | ✅ |
 | Eigen dashboards met versleepbare widgets | ⏳ |
 | Formulebouwer eigen KPI's | ⏳ |
 | Eigen regels ("als … dan voorstel …") | ⏳ |

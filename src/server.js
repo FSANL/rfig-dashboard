@@ -12,6 +12,7 @@ const A = require('./analytics');
 const B = require('./backup');
 const I = require('./importer');
 const { seedDemo } = require('./demo');
+const { writeAgentExport } = require('./agentExport');
 const D = require('./calc/dates');
 const { COST_TYPES } = require('./calc/margin');
 
@@ -28,7 +29,14 @@ async function runSync(reason) {
   log(`Synchronisatie gestart (${reason})`);
   const res = await sync.syncAll({ includeTests: reason === 'koppeltest' });
   for (const r of res) log(`  ${r.ok ? 'OK ' : 'FOUT'} ${r.dataset}: ${r.message || ''}`);
+  refreshAgentExport();
   return res;
+}
+
+function refreshAgentExport() {
+  if (!config.backupDir) return;
+  try { const r = writeAgentExport(db, config); dbm.setMeta(db, 'agent_export_at', new Date().toISOString()); dbm.setMeta(db, 'agent_export_error', ''); log(`Agent-export bijgewerkt (${Math.round(r.bytes / 1024)} kB)`); }
+  catch (e) { dbm.setMeta(db, 'agent_export_error', `${new Date().toISOString()} ${e.message}`); log(`Agent-export mislukt: ${e.message}`); }
 }
 
 function backupIfDue(reason) {
@@ -120,6 +128,7 @@ const routes = {
       priceRegistrationStart: dbm.getMeta(db, 'price_registration_start'),
       orderHistoryStart: dbm.getMeta(db, 'orders_history_start'),
       backup: B.status(db, config),
+      agentExport: { at: dbm.getMeta(db, 'agent_export_at'), error: dbm.getMeta(db, 'agent_export_error') },
     };
   },
   'GET /api/overview': () => {
@@ -246,6 +255,7 @@ if (require.main === module) {
     log(`RFIG Dashboard draait op http://localhost:${config.port}  (modus: ${config.mode === 'DEMO' ? 'DEMO — synthetische gegevens' : 'LIVE'})`);
     if (config.mode === 'DEMO') log('Geen bol-toegang ingesteld in .env: het dashboard toont DEMODATA.');
     backupIfDue('start');
+    if (config.mode === 'DEMO') refreshAgentExport();
     runSync('opstarten / inhalen gemiste synchronisatie').catch((e) => log('Synchronisatie fout:', e.message));
     setInterval(() => { runSync('gepland').catch((e) => log('Synchronisatie fout:', e.message)); }, config.syncIntervalMinutes * 60000);
     setInterval(() => backupIfDue('gepland'), 60 * 60000);
