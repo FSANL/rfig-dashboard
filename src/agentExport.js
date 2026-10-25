@@ -11,11 +11,13 @@ const { datasetStatus } = require('./sync');
 const { getMeta } = require('./db');
 
 const FILE = 'RFIG agent-export.xlsx';
+const SUBFOLDER = 'Dashboard-export';
 
 function exportDir(config) {
   // Demo nooit in de agentmap: agents mogen geen synthetische gegevens zien.
   if (config.mode === 'DEMO') return config.backupDir ? path.join(config.backupDir, 'Agent-export-demo') : null;
-  if (config.agentExportDir) return config.agentExportDir;
+  // Eigen submap, zodat het bestand niet los tussen de agentmappen staat.
+  if (config.agentExportDir) return path.join(config.agentExportDir, SUBFOLDER);
   return config.backupDir ? path.join(config.backupDir, 'Agent-export') : null;
 }
 
