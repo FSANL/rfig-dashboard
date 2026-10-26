@@ -7,7 +7,9 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-if not exist ".env" copy ".env.example" ".env" >nul
+if not exist "%USERPROFILE%\Documents\RFIG - Secrets\.env" if not exist ".env" (
+  echo Geen .env gevonden in "%USERPROFILE%\Documents\RFIG - Secrets". Het dashboard start in DEMO-modus.
+)
 start "" /min cmd /c "timeout /t 3 /nobreak >nul & start http://localhost:3010"
 echo RFIG Dashboard draait. Sluit dit venster om te stoppen.
 node --disable-warning=ExperimentalWarning src\server.js

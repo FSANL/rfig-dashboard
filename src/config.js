@@ -2,6 +2,7 @@
 // Leest .env (zonder externe pakketten). Geheimen worden nooit gelogd of naar de browser gestuurd.
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -22,7 +23,18 @@ function loadEnvFile(file) {
   return out;
 }
 
-const fileEnv = loadEnvFile(path.join(ROOT, '.env'));
+// Geheimen staan BUITEN de app-map (die naar Google Drive synchroniseert).
+// Volgorde: RFIG_ENV_FILE (omgevingsvariabele) > Documenten\RFIG - Secrets\.env > .env in de app-map (oud, afgeraden).
+const ENV_CANDIDATES = [
+  process.env.RFIG_ENV_FILE,
+  path.join(os.homedir(), 'Documents', 'RFIG - Secrets', '.env'),
+  path.join(ROOT, '.env'),
+].filter(Boolean);
+const envFile = ENV_CANDIDATES.find((f) => fs.existsSync(f)) || null;
+const fileEnv = envFile ? loadEnvFile(envFile) : {};
+if (envFile === path.join(ROOT, '.env')) {
+  console.warn('LET OP: .env staat in de app-map en kan zo naar Google Drive synchroniseren. Verplaats hem naar Documenten\\RFIG - Secrets.');
+}
 const env = (k, d = '') => process.env[k] ?? fileEnv[k] ?? d;
 
 const retailer = { id: env('BOL_RETAILER_CLIENT_ID'), secret: env('BOL_RETAILER_CLIENT_SECRET') };
@@ -32,6 +44,7 @@ const forceDemo = env('DEMO_MODE', '').toLowerCase() === 'true';
 
 const config = {
   root: ROOT,
+  envFile, // pad (geen inhoud) van het gebruikte instellingenbestand
   port: Number(env('PORT', '3010')),
   host: '127.0.0.1', // alleen bereikbaar vanaf deze pc
   mode: forceDemo || !hasRetailer ? 'DEMO' : 'LIVE',
@@ -60,6 +73,7 @@ config.publicView = () => ({
   priceGapHours: config.priceGapHours,
   vatRate: config.vatRate,
   dbFile: path.basename(config.dbFile),
+  envFile: config.envFile ? path.dirname(config.envFile) : 'niet gevonden',
 });
 
 module.exports = config;
