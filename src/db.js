@@ -108,6 +108,12 @@ CREATE TABLE IF NOT EXISTS offer_changes (
 );
 CREATE INDEX IF NOT EXISTS ix_changes_ean ON offer_changes(ean, detected_at);
 
+-- Afvinkstatus van de actielijst van Linda (het enige wat het dashboard zelf vastlegt over acties).
+CREATE TABLE IF NOT EXISTS action_status (
+  action_id TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','AFGEROND')),
+  done_at TEXT, done_by TEXT
+);
+
 CREATE TABLE IF NOT EXISTS change_log (
   id INTEGER PRIMARY KEY, at TEXT DEFAULT (datetime('now')), entity TEXT, entity_id TEXT, action TEXT, detail TEXT
 );

@@ -49,7 +49,7 @@ async function refreshHeader() {
 }
 
 // ---------- Router ----------
-const pages = { wijzigingen: pageChanges, overzicht: pageOverview, producten: pageProducts, product: pageProduct, seizoen: pageSeason, werkruimte: pageWorkspace, gegevens: pageData };
+const pages = { acties: pageActions, wijzigingen: pageChanges, overzicht: pageOverview, producten: pageProducts, product: pageProduct, seizoen: pageSeason, werkruimte: pageWorkspace, gegevens: pageData };
 async function route() {
   const [, name = 'overzicht', arg] = (location.hash || '#/overzicht').split('/');
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('href') === `#/${name === 'product' ? 'producten' : name}`));
@@ -59,7 +59,7 @@ async function route() {
   $app.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', route);
-document.addEventListener('DOMContentLoaded', () => { refreshHeader(); route(); setInterval(refreshHeader, 60000); });
+document.addEventListener('DOMContentLoaded', () => { refreshHeader(); refreshActionCount(); route(); setInterval(refreshHeader, 60000); setInterval(refreshActionCount, 5 * 60000); });
 
 // ---------- Overzicht ----------
 async function pageOverview() {
@@ -518,4 +518,67 @@ function parseCsv(text) {
   if (cur || row.length) { row.push(cur); rows.push(row); }
   const [h, ...data] = rows;
   return data.map((r) => Object.fromEntries(h.map((k, i) => [k.trim(), r[i] === undefined || r[i] === '' ? null : r[i]])));
+}
+
+
+// ---------- Acties (actielijst van Linda) ----------
+const LEVEL = {
+  PARAMOUNT: ['t-bad', 'Paramount', 'Direct actie, grote impact'],
+  ESSENTIAL: ['t-warn', 'Essential', 'Deze week oppakken'],
+  IMPORTANT: ['t-info', 'Important', 'Inplannen'],
+  BASIC: ['t-muted', 'Basic', 'Ter info'],
+  ONBEKEND: ['t-muted', 'Onbekend', 'Classificatie ontbreekt'],
+};
+async function refreshActionCount() {
+  try {
+    const a = await api('/api/actions');
+    const el = document.getElementById('actcount');
+    const urgent = a.open.filter((x) => x.level === 'PARAMOUNT' || x.level === 'ESSENTIAL').length;
+    el.textContent = a.open.length; el.hidden = !a.open.length; el.classList.toggle('urgent', urgent > 0);
+    el.title = `${a.open.length} open, waarvan ${urgent} Paramount/Essential`;
+  } catch { /* stil: de pagina zelf toont de fout */ }
+}
+async function pageActions() {
+  const a = await api('/api/actions');
+  const by = store.get('actBy', '');
+  const card = (x, done) => {
+    const [cls, lab] = LEVEL[x.level] || LEVEL.ONBEKEND;
+    const due = x.due ? 'Deadline ' + dd(x.due) : (x.dueText ? 'Deadline ' + x.dueText : 'Geen deadline');
+    return `<article class="action ${done ? 'done' : ''} lv-${x.level.toLowerCase()}">
+      <label class="check" title="${done ? 'Heropenen' : 'Afvinken'}"><input type="checkbox" data-id="${esc(x.id)}" ${done ? 'checked' : ''}><span class="sr">Afgerond</span></label>
+      <div class="abody">
+        <div class="ahead"><span class="tag ${cls}">${lab}</span>
+          <span class="small muted">${esc(x.agent || 'onbekend')}${x.product ? ' · ' + esc(x.product) : ''}</span>
+          <span class="spacer"></span>
+          <span class="small ${x.overdue && !done ? 'overdue' : 'muted'}">${x.overdue && !done ? 'Te laat · ' : ''}${esc(due)}</span></div>
+        <h3>${esc(x.what)}</h3>
+        ${x.why ? `<p class="why">${esc(x.why)}</p>` : ''}
+        <p class="todo"><strong>Wat te doen:</strong> ${esc(x.todo)}</p>
+        <div class="afoot small muted"><span>Wie: <strong>${esc(x.who || 'nog niet bepaald')}</strong></span>
+          ${x.source && /^https?:\/\//.test(x.source) ? `<a href="${esc(x.source)}" target="_blank" rel="noopener">Bron bekijken</a>` : (x.source ? `<span>Bron: ${esc(x.source)}</span>` : '')}
+          <span>ID ${esc(x.id)}</span>
+          ${done ? `<span>Afgevinkt ${esc(dt(x.doneAt ? x.doneAt.replace(' ', 'T') + 'Z' : null))}${x.doneBy ? ' door ' + esc(x.doneBy) : ''}</span>` : ''}</div>
+      </div></article>`;
+  };
+  const groups = ['PARAMOUNT', 'ESSENTIAL', 'IMPORTANT', 'BASIC', 'ONBEKEND'].map((lv) => [lv, a.open.filter((x) => x.level === lv)]).filter(([, l]) => l.length);
+  const counts = groups.map(([lv, l]) => `<span class="tag ${LEVEL[lv][0]}">${l.length} ${LEVEL[lv][1]}</span>`).join(' ');
+  $app.innerHTML = `
+    <div class="row"><h1>Acties</h1><span class="spacer"></span>
+      <label class="small muted">Afgevinkt door <input id="actby" value="${esc(by)}" placeholder="je naam" style="width:130px"></label></div>
+    <p class="muted small">Opgesteld door Linda op basis van de weekrapportages van de agents. Belangrijkste eerst; binnen hetzelfde belang de vroegste deadline eerst.
+      Afvinken wordt alleen in dit dashboard bewaard en gaat via de agent-export terug naar Linda.</p>
+    ${a.problems.length ? `<div class="note ${a.fileFound ? 'warn' : 'bad'}"><strong>${a.fileFound ? 'Let op bij het inlezen' : 'Actielijst niet beschikbaar'}</strong><br>${a.problems.map(esc).join('<br>')}</div>` : ''}
+    ${a.fileFound ? `<p class="small muted">Bestand van Linda bijgewerkt: ${dt(a.fileModified)} · ${a.open.length} open ${counts ? '· ' + counts : ''}</p>` : ''}
+    ${a.fileFound && !a.open.length ? '<div class="panel"><p>Geen openstaande acties. 🎉</p></div>' : ''}
+    ${groups.map(([lv, l]) => `<section class="agroup"><h2>${LEVEL[lv][1]} <span class="muted small">— ${LEVEL[lv][2]}</span></h2>${l.map((x) => card(x, false)).join('')}</section>`).join('')}
+    ${a.done.length ? `<details class="agroup"><summary><h2 style="display:inline">Afgerond (${a.done.length})</h2></summary>${a.done.map((x) => card(x, true)).join('')}</details>` : ''}`;
+  $app.querySelector('#actby').onchange = (e) => store.set('actBy', e.target.value.trim());
+  $app.querySelectorAll('.action input[type=checkbox]').forEach((cb) => cb.onchange = async () => {
+    cb.disabled = true;
+    try {
+      await api('/api/actions/status', { id: cb.dataset.id, done: cb.checked, by: store.get('actBy', '') || null });
+      toast(cb.checked ? 'Afgevinkt' : 'Weer open gezet');
+      refreshActionCount(); await pageActions();
+    } catch (e) { toast('Niet gelukt: ' + e.message); cb.checked = !cb.checked; cb.disabled = false; }
+  });
 }

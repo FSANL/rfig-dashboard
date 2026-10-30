@@ -35,6 +35,7 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 | Automatische waarneming van wijzigingen per product (prijs, staffel, status NL/BE, pauze, fulfilment, levertijd, voorraad, uitverkocht, aanbieding verdwenen) | ✅ |
 | Geen handmatige invoer van prijswijzigingen nodig (waarnemingstool) | ✅ |
 | Agent-export (RFIG agent-export.xlsx in Drive, na elke synchronisatie) voor de RFIG-agents | ✅ |
+| Pagina Acties: actielijst van Linda, gesorteerd op belang, afvinken (lokaal bewaard, terug via agent-export) | 🟡 getest met voorbeelddata; wacht op eerste echte lijst van Linda |
 | Eigen dashboards met versleepbare widgets | ⏳ |
 | Formulebouwer eigen KPI's | ⏳ |
 | Eigen regels ("als … dan voorstel …") | ⏳ |
@@ -62,6 +63,7 @@ Stand: 25 oktober 2026 (versie 0.1). Legenda: ✅ werkt en getest · 🟡 werkt,
 - [ ] Is commissie in bol excl. of incl. btw? (vergelijk met factuurspecificatie)
 
 ## Openstaande punten
+- Test `live-synchronisatie` in test/sync.test.js faalt sinds eind oktober: vaste testdatum 2026-10-20 valt buiten het venster van 10 dagen (datumafhankelijke test, geen fout in de app). Testdatum relatief maken.
 - Offers v11: exact pad/antwoordformaat bevestigen in de koppeltest.
 - Btw-behandeling bol-commissie: uit RFIG-orders afgeleid dat commissie incl. 21% btw is ((€ 0,95 + 8%) × 1,21, klopt op elke prijs). Dashboard rekent nu excl. btw. Nog bevestigen met een factuurspecificatie.
 - `data\server.log` groeit; rotatie toevoegen.

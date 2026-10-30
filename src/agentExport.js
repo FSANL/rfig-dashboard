@@ -110,11 +110,19 @@ function writeAgentExport(db, config, nowMs = Date.now()) {
     verkoop.push([a.d, String(a.ean), p.title || '', a.units, Math.round(a.gross * 100) / 100, a.priced ? Math.round((a.gross / a.priced) * 100) / 100 : null, a.cancelled]);
   }
 
+  // Afvinkstatus van de actielijst, zodat Linda weet wat is afgehandeld.
+  const acties = [['Actie-ID', 'Status', 'Afgevinkt op', 'Afgevinkt door']];
+  for (const r of db.prepare("SELECT * FROM action_status WHERE status = 'AFGEROND' ORDER BY done_at DESC").all()) {
+    acties.push([r.action_id, 'afgerond', nl(r.done_at ? r.done_at.replace(' ', 'T') + 'Z' : null), r.done_by || '']);
+  }
+  if (acties.length === 1) acties.push(['(nog niets afgevinkt)']);
+
   const buf = buildXlsx([
     { name: 'Leesmij', rows: leesmij },
     { name: 'Aanbod nu', rows: aanbod },
     { name: 'Wijzigingen 30 dagen', rows: wijz },
     { name: 'Verkoop per dag 90 dagen', rows: verkoop },
+    { name: 'Acties status', rows: acties },
   ]);
   const tmp = path.join(dir, `.tmp-${process.pid}.xlsx`);
   fs.writeFileSync(tmp, buf);

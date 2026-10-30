@@ -13,6 +13,7 @@ const B = require('./backup');
 const I = require('./importer');
 const { seedDemo } = require('./demo');
 const { writeAgentExport } = require('./agentExport');
+const ACT = require('./actions');
 const D = require('./calc/dates');
 const { COST_TYPES } = require('./calc/margin');
 
@@ -168,6 +169,13 @@ const routes = {
     const rows = db.prepare(`SELECT c.*, p.title FROM offer_changes c LEFT JOIN products p ON p.ean = c.ean WHERE c.detected_at >= ? ORDER BY c.detected_at DESC LIMIT 2000`)
       .all(new Date(Date.now() - days * 86400000).toISOString());
     return { since: dbm.getMeta(db, 'price_registration_start'), rows };
+  },
+  'GET /api/actions': () => ACT.loadActions(db, config, D.today()),
+  'POST /api/actions/status': (q, b) => {
+    ACT.setStatus(db, b.id, !!b.done, b.by);
+    dbm.log(db, 'actie', b.id, b.done ? 'AFGEVINKT' : 'HEROPEND', { by: b.by || null });
+    refreshAgentExport(); // Linda ziet de status terug in de agent-export (tabblad "Acties status")
+    return { ok: true };
   },
   'GET /api/targets':() => db.prepare('SELECT * FROM targets ORDER BY ean').all(),
   'POST /api/targets': (q, b) => { I.upsertTarget(db, { end_stock: 0, min_measure_days: 7, tolerance_days: 7, ...b }); return { ok: true }; },

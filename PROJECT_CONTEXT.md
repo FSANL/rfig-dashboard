@@ -19,6 +19,7 @@ src/
   calc/pricePeriods.js  §12 prijsperioden
   calc/velocity.js §11/§14/§16 tempo, prognose, benodigd tempo, status
   calc/margin.js   §8 bijdrage per stuk, ontbrekend = onbekend
+  actions.js       actielijst van Linda (CSV in Drive) inlezen, sorteren, afvinkstatus
   importer.js      proefimport/vastleggen Excel/CSV
   backup.js        VACUUM INTO, bewaarschema 7/4/12, hersteltest
   demo.js          synthetische demodata
@@ -29,6 +30,7 @@ test/              node --test (27 tests)
 - `products` (EAN tekst, handmatige velden), `offers`, `price_observations` (elke meting + handmatige exacte wijzigingen), `stock_snapshots` (per locatie, per meting), `orders`/`order_items` (alleen landcode als persoonsgegeven), `costs` (per stuk excl. btw, geldig vanaf/tot, GEBOEKT/GESCHAT), `external_stock` (PackFeed-import), `incoming_stock`, `targets` (per EAN of `GROEP:<naam>`), `workspace_items`, `imports`, `sync_runs`, `change_log`, `meta`.
 - `offer_changes`: automatisch waargenomen wijzigingen (vergelijking met vorige stand per synchronisatie; `src/changes.js`). Eerste synchronisatie = beginstand, geen wijzigingen. Wijzigingen in productcontent en advertenties zijn niet zichtbaar via deze koppeling.
 - Waarnemingstool: er is geen handmatige invoer van prijswijzigingen (besluit Ivo 2026-10-25); wijzigingen worden door anderen in bol gedaan.
+- `action_status`: afvinkstatus per actie-ID van de actielijst van Linda. Afvinken is de enige schrijfactie rond acties (besluit Ivo 2026-10-29); het CSV-bestand van Linda wordt nooit gewijzigd. Status gaat terug naar Linda via tabblad "Acties status" in de agent-export.
 - Synchronisatie schrijft nooit in `costs`, `targets`, `workspace_items` of handmatige productvelden.
 
 ## KPI-definities
@@ -52,6 +54,12 @@ test/              node --test (27 tests)
 - Status: basis = huidige prijs bij ≥ min. meetdagen, anders 7 dagen (moet volledig zijn), anders ONVOLDOENDE_GEGEVENS. TE_SNEL als uitverkocht > marge dagen vóór doel; TE_LANGZAAM als rest op doel > eindvoorraad en afwijking > marge.
 - Inkomende voorraad (alleen bevestigd) telt vanaf ontvangstdatum (dag-simulatie). Voorraad nooit negatief; onvervulde vraag apart.
 - Prijsaanwijzingen: één prijsstap, binnen min/max, altijd "onderzoeken", nooit automatisch wijzigen.
+
+## Actielijst (pagina Acties)
+- Bron: `<AGENT_EXPORT_DIR>\Linda (Rapportage & Analyse)\Actielijst RFIG.csv` (of `ACTIONS_FILE`). Demo: `templates/actielijst-voorbeeld.csv`.
+- Kolommen: ID; Datum gemeld; Agent; Classificatie; Wat; Waarom belangrijk; Wat te doen; Wie; Wanneer; Bron; Product (optioneel). Scheidingsteken ; of , (automatisch), UTF-8.
+- Sortering: Paramount > Essential > Important > Basic > onbekend; daarbinnen vroegste deadline, dan oudste melding.
+- Ontbrekend bestand of kapotte regels worden op de pagina gemeld, nooit stil weggelaten.
 
 ## Ontwerpkeuzes
 - Alleen-lezen client: er bestaan geen schrijfmethoden naar bol in de code.

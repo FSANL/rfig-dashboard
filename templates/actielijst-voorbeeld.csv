@@ -1,0 +1,5 @@
+ID;Datum gemeld;Agent;Classificatie;Wat;Waarom belangrijk;Wat te doen;Wie;Wanneer;Bron;Product
+VOORBEELD-01;2026-10-27;Ralph;Essential;De verwarmingsdeken 150x190 staat niet meer in de buy-box.;Zonder buy-box komt bijna geen verkoop binnen.;Prijs van de concurrent controleren en besluiten of we meegaan.;Compagnon;2026-10-31;https://drive.google.com/;Verwarmingsdeken 150x190
+VOORBEELD-02;2026-10-27;Meindert;Important;De kostprijs van drie producten ontbreekt nog.;Zonder kostprijs is de marge niet te berekenen.;Inkoopprijs, transport en verpakking aanleveren bij Meindert.;Ivo;2026-11-14;https://drive.google.com/;
+VOORBEELD-03;2026-10-28;Rebecca;Important;Een klant gaf de winkel een 4 voor de levertijd.;Slechte winkelcijfers kunnen de positie op bol verlagen.;Bij Packfeed navragen waarom deze bestelling laat was.;Compagnon;2026-11-04;https://drive.google.com/;
+VOORBEELD-04;2026-10-28;Linda;Basic;Acht agents hebben nog geen weekrapportage.;Verwacht zolang zij geen taakbrief hebben; geen risico.;Niets doen tot de review van 14 december.;Ivo;2026-12-14;https://drive.google.com/;

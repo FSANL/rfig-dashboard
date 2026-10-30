@@ -84,3 +84,22 @@ svg.chart { width: 100%; height: auto; display: block; }
 .colpicker { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; margin: 6px 0 10px; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; z-index: 10; max-width: 420px; }
 @media (max-width: 640px) { .top, main { padding-left: 16px; padding-right: 16px; } .two { grid-template-columns: 1fr; } .syncbadge { margin-left: 0; } }
+
+/* Acties */
+.navcount { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 99px; background: var(--line); color: var(--ink); font-size: 12px; text-align: center; }
+.navcount.urgent { background: var(--bad); color: #fff; }
+.agroup { margin: 22px 0 0; }
+.agroup > h2, .agroup summary { margin-bottom: 10px; cursor: default; }
+details.agroup summary { cursor: pointer; }
+.action { display: flex; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.action.lv-paramount { border-left-color: var(--bad); } .action.lv-essential { border-left-color: var(--warn); } .action.lv-important { border-left-color: var(--info); }
+.action.done { opacity: .6; } .action.done h3 { text-decoration: line-through; }
+.action .check input { width: 22px; height: 22px; margin-top: 2px; cursor: pointer; accent-color: var(--accent); }
+.abody { flex: 1; min-width: 0; }
+.ahead { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.action h3 { font-size: 16px; margin: 10px 0 6px; line-height: 1.35; }
+.action p { margin: 0 0 8px; line-height: 1.55; }
+.action .why { color: var(--muted); }
+.afoot { display: flex; gap: 6px 18px; flex-wrap: wrap; margin-top: 4px; }
+.overdue { color: var(--bad); font-weight: 600; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
